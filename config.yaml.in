@@ -1,0 +1,26 @@
+# test config
+
+tpm_dir: tmp/
+openssl_dir: /usr/local/ssl/
+
+keys:
+  type: EC
+
+nginx:
+  client_cert:
+    enabled: true
+  ports:
+    start: 7000
+
+pkcs11:
+  tokens:
+    prefix: ngxp11
+    num: 3
+
+  proxy:
+    enabled: false
+    lib: /lib/libpkcs11-proxy.so
+
+  softhsm:
+    token_dir: /usr
+    lib: /usr/local/lib/softhsm/libsofthsm2.so
