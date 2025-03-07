@@ -1,16 +1,16 @@
 import os
 import time
+import hashlib
 from datetime import datetime, timedelta
 from pkcs11 import lib, KeyType, Mechanism
 from pkcs11.util.rsa import encode_rsa_public_key
-from pkcs11.util.ec import encode_ec_public_key
+from pkcs11.util.ec import encode_ec_public_key, decode_ecdsa_signature
 from asn1crypto.x509 import Certificate, TbsCertificate, SignedDigestAlgorithm
 from asn1crypto.algos import DigestAlgorithm, SignedDigestAlgorithm
-from asn1crypto.core import Integer, OctetBitString
+from asn1crypto.core import Integer, OctetBitString, Sequence
 from asn1crypto.keys import PublicKeyInfo
 from asn1crypto import pem
 from nginx_pkcs11_provider.config import Config
-
 
 def generate_tbs_certificate(subject_name, public_key_info):
     """Create an X.509 TBS (To-Be-Signed) certificate structure."""
@@ -40,11 +40,24 @@ def extract_public_key(pkcs11_pub_key):
 
     return PublicKeyInfo.load(pub_der)
 
-
 def sign_with_pkcs11(session, private_key, tbs_data, key_type):
-    """Sign the extracted TBS certificate data using the PKCS#11 private key."""
-    mechanism = Mechanism.SHA256_RSA_PKCS if key_type == KeyType.RSA else Mechanism.ECDSA
-    return private_key.sign(tbs_data, mechanism=mechanism)
+    """Sign the TBS certificate data using the PKCS#11 private key."""
+    if key_type == KeyType.RSA:
+        mechanism = Mechanism.SHA256_RSA_PKCS
+        return private_key.sign(tbs_data, mechanism=mechanism)
+    elif key_type == KeyType.EC:
+        mechanism = Mechanism.ECDSA
+        tbs_hash = hashlib.sha256(tbs_data).digest()
+        raw_signature = private_key.sign(tbs_hash, mechanism=mechanism)
+        return encode_ecdsa_signature(raw_signature)
+    else:
+        raise ValueError("Unsupported key type for signing")
+
+
+def encode_ecdsa_signature(signature):
+    """Convert raw PKCS#11 ECDSA signature to ASN.1 DER format."""
+    r, s = decode_ecdsa_signature(signature)
+    return Sequence([Integer(r), Integer(s)]).dump()
 
 
 def generate_signed_certificate(session, priv_key, pub_key, subject_name, key_type):
@@ -59,15 +72,22 @@ def generate_signed_certificate(session, priv_key, pub_key, subject_name, key_ty
     # Sign the TBS data with PKCS#11
     signature = sign_with_pkcs11(session, priv_key, tbs_der, key_type)
 
+    # Set the correct signature algorithm
+    if key_type == KeyType.RSA:
+        signature_algorithm = "sha256_rsa"
+    elif key_type == KeyType.EC:
+        signature_algorithm = "sha256_ecdsa"
+    else:
+        raise ValueError("Unsupported key type")
+
     # Create the final certificate structure
     signed_cert = Certificate({
         "tbs_certificate": tbs_cert,
-        "signature_algorithm": SignedDigestAlgorithm({"algorithm": "sha256_rsa"}),
+        "signature_algorithm": SignedDigestAlgorithm({"algorithm": signature_algorithm}),
         "signature_value": OctetBitString(signature),
     })
 
     return signed_cert.dump()
-
 
 def generate_keys(config: Config):
     """Generate RSA or EC keys for each SoftHSM token and store a self-signed certificate."""
@@ -108,8 +128,3 @@ def generate_keys(config: Config):
             f.write(cert_pem)
 
         print(f"✅ Self-signed certificate generated: {cert_file}")
-
-
-if __name__ == "__main__":
-    config = Config("config.yml")
-    generate_keys(config)
