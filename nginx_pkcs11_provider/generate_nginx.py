@@ -36,8 +36,6 @@ CLIENT_CERT_CONFIG = """
 def generate_nginx_config(config: Config):
     """Generates the Nginx configuration file based on the config settings."""
     tmp_dir = config.get_tmp_dir()
-    os.makedirs(tmp_dir, exist_ok=True)
-
     tokens = config.get_tokens()
     port_start = config.get("nginx.ports.start", 8443)
     enable_client_cert = config.is_nginx_client_cert_enabled()

@@ -18,6 +18,7 @@ class Config:
         self.config = self._load_config()
         self._init_tokens()
         self.custom_envs = {}
+        self.cache = {}
 
     def _load_config(self):
         """Load the YAML configuration file."""
@@ -50,12 +51,19 @@ class Config:
 
     def get(self, key, default=None):
         """Helper function to retrieve a config value using dot notation."""
+        if key in self.cache:
+            return self.cache[key]
         keys = key.split(".")
         value = self.config
         for k in keys:
-            value = value.get(k, default) if isinstance(value, dict) else default
+            if isinstance(value, dict):
+                value = value.get(k, default)
+            else:
+                value = default
+                break
         if value is None:
             raise ValueError(f"Config value not found: {key}")
+        self.cache[key] = value
         return value
 
     def get_key_type(self, default: str = "EC"):
@@ -90,12 +98,12 @@ class Config:
 
     def get_pkcs11_module_path(self):
         """Determine the correct path for pkcs11.so."""
-        custom_path = self.get("pkcs11_module")
-        openssl_dir = self.get_openssl_dir()
-
+        custom_path = self.get("pkcs11.module")
         if custom_path:
             return custom_path
-        elif openssl_dir:
+
+        openssl_dir = self.get_openssl_dir()
+        if openssl_dir:
             module_path = os.path.join(openssl_dir, "ossl-modules", "pkcs11.so")
             if os.path.exists(module_path):
                 return module_path

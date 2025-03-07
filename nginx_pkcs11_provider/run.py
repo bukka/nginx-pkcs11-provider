@@ -2,7 +2,7 @@ import argparse
 import os
 
 from nginx_pkcs11_provider.config import Config
-from nginx_pkcs11_provider.setup_tokens import setup_softhsm
+from nginx_pkcs11_provider.setup_softhsm import setup_softhsm
 from nginx_pkcs11_provider.generate_openssl_conf import generate_openssl_conf
 from nginx_pkcs11_provider.generate_keys import generate_keys
 from nginx_pkcs11_provider.generate_nginx import generate_nginx_config
@@ -10,9 +10,13 @@ from nginx_pkcs11_provider.generate_client_cert import generate_client_cert
 from nginx_pkcs11_provider.run_nginx import run_nginx
 from nginx_pkcs11_provider.run_client import run_client_test
 
+def init_tmp(config: Config):
+    os.makedirs(config.get_tmp_dir(), exist_ok=True)
+
 def init(config: Config):
     """Initializes everything: SoftHSM tokens, OpenSSL config, keys, nginx config, and client certs."""
     print("🔹 Initializing PKCS#11 environment...")
+    init_tmp(config)
     generate_openssl_conf(config)
     setup_softhsm(config)
     generate_keys(config)

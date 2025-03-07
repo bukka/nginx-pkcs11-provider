@@ -8,7 +8,7 @@ directories.tokendir = {token_dir}
 objectstore.backend = file
 
 # ERROR, WARNING, INFO, DEBUG
-log.level = WARNING
+log.level = {log_level}
 
 # If CKF_REMOVABLE_DEVICE flag should be set
 slots.removable = false
@@ -16,8 +16,11 @@ slots.removable = false
 
 def setup_softhsm(config: Config):
     """Initialize SoftHSM tokens with unique PINs."""
-    so_pin = config.get("softhsm.so_pin", '1234')
-    token_dir = config.get("softhsm.token_dir")
+    tmp_dir = config.get_tmp_dir()
+    token_dir = config.get("pkcs11.softhsm.token_dir", os.path.join(tmp_dir, "tokendir"))
+    log_level = config.get("pkcs11.softhsm.log.level", "WARNING")
+    so_pin = config.get("pkcs11.softhsm.so_pin", '1234')
+    library_path = config.get_pkcs11_library_path(True)
     num_tokens = config.get_tokens_num()
     tokens = config.get_tokens()
 
@@ -25,8 +28,9 @@ def setup_softhsm(config: Config):
 
     softhsm2_conf_content = SOFTHSM2_TEMPLATE.format(
         token_dir=token_dir,
+        log_level=log_level,
     )
-    softhsm2_conf_path = os.path.join(token_dir, "softhsm2.conf")
+    softhsm2_conf_path = os.path.join(tmp_dir, "softhsm2.conf")
     with open(softhsm2_conf_path, "w") as f:
         f.write(softhsm2_conf_content)
     config.set_env("SOFTHSM2_CONF", softhsm2_conf_path)
@@ -36,6 +40,7 @@ def setup_softhsm(config: Config):
 
         subprocess.run([
             "softhsm2-util", "--init-token",
+            "--module", library_path,
             "--slot", slot_id, "--label", token.name,
             "--pin", token.pin, "--so-pin", so_pin
         ], check=True)

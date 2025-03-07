@@ -5,7 +5,7 @@ from nginx_pkcs11_provider.config import Config
 
 def run_nginx(config: Config):
     """Runs Nginx using the generated configuration."""
-    tmp_dir = config.get("nginx.tmp_dir")
+    tmp_dir = config.get_tmp_dir()
     nginx_conf_path = os.path.join(tmp_dir, "nginx.conf")
 
     if not os.path.exists(nginx_conf_path):
