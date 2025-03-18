@@ -1,7 +1,7 @@
 import os
 import time
 import hashlib
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from pkcs11 import lib, KeyType, Mechanism
 from pkcs11.util.rsa import encode_rsa_public_key
 from pkcs11.util.ec import encode_ec_public_key, decode_ecdsa_signature
@@ -20,8 +20,8 @@ def generate_tbs_certificate(subject_name, public_key_info):
         "signature": SignedDigestAlgorithm({"algorithm": "sha256_rsa"}),
         "issuer": {"common_name": "PKCS11 Test CA"},
         "validity": {
-            "not_before": datetime.utcnow(),
-            "not_after": datetime.utcnow() + timedelta(days=365),
+            "not_before": datetime.now(timezone.utc),
+            "not_after": datetime.now(timezone.utc) + timedelta(days=365),
         },
         "subject": {"common_name": subject_name},
         "subject_public_key_info": public_key_info,
@@ -94,7 +94,7 @@ def generate_keys(config: Config):
     tokens = config.get_tokens()
     tmp_dir = config.get_tmp_dir()
     key_type = config.get_key_type()
-    lib_path = config.get_pkcs11_library_path()
+    lib_path = config.get_pkcs11_library_path(True)
 
     pkcs11 = lib(lib_path)
 

@@ -4,7 +4,7 @@ from cryptography.x509.oid import NameOID
 from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.primitives.asymmetric import rsa, ec
 from cryptography.hazmat.primitives import serialization
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from nginx_pkcs11_provider.config import Config
 
 def generate_client_cert(config: Config):
@@ -39,14 +39,14 @@ def generate_client_cert(config: Config):
         .issuer_name(issuer)
         .public_key(public_key)
         .serial_number(x509.random_serial_number())
-        .not_valid_before(datetime.utcnow())
-        .not_valid_after(datetime.utcnow() + timedelta(days=365))
+        .not_valid_before(datetime.now(timezone.utc))
+        .not_valid_after(datetime.now(timezone.utc) + timedelta(days=365))
         .add_extension(x509.BasicConstraints(ca=True, path_length=None), critical=True)
         .sign(private_key, hashes.SHA256())
     )
 
-    private_key_path = os.path.join(tmp_dir, "client-key.pem")
-    cert_path = os.path.join(tmp_dir, "client-cert.pem")
+    private_key_path = config.get_client_private_key_path()
+    cert_path = config.get_client_cert_path()
 
     with open(private_key_path, "wb") as f:
         f.write(

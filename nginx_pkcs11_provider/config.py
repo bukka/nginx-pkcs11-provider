@@ -13,6 +13,8 @@ class Token:
 
 
 class Config:
+    cache: dict
+
     def __init__(self, config_path=None):
         self.config_path = config_path or "config.yml"
         self.config = self._load_config()
@@ -20,7 +22,7 @@ class Config:
         self.custom_envs = {}
         self.cache = {}
 
-    def _load_config(self):
+    def _load_config(self) -> dict:
         """Load the YAML configuration file."""
         if not os.path.exists(self.config_path):
             raise FileNotFoundError(f"Configuration file not found: {self.config_path}")
@@ -85,6 +87,14 @@ class Config:
     def get_tmp_dir(self):
         """Returns the temporary directory for storing PEM files."""
         return self.get("tmp_dir")
+
+    def get_client_cert_path(self):
+        """Returns the path to the client certificate."""
+        return os.path.join(self.get_tmp_dir(), "client-cert.pem")
+
+    def get_client_private_key_path(self):
+        """Returns the path to the client key."""
+        return os.path.join(self.get_tmp_dir(), "client-key.pem")
 
     def get_default_pin(self):
         """Returns the first generated token's PIN as the default one."""

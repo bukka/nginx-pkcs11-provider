@@ -47,7 +47,7 @@ def generate_nginx_config(config: Config):
             server_cert=os.path.join(tmp_dir, f"{token.main_server_cert}.crt"),
             server_key=os.path.join(tmp_dir, f"{token.main_server_key}.pem"),
             client_cert_config=CLIENT_CERT_CONFIG.format(
-                client_cert=os.path.join(tmp_dir, "client-cert.pem")
+                client_cert=config.get_client_cert_path()
             ) if enable_client_cert else ""
         )
         for token in tokens

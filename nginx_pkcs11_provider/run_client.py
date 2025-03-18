@@ -4,9 +4,8 @@ from nginx_pkcs11_provider.config import Config
 
 def run_client_test(config: Config):
     """Perform a client-authenticated HTTPS request."""
-    tmp_dir = os.path.join(config.get_tmp_dir(), "client")
-    client_cert = os.path.join(tmp_dir, "client-cert.pem")
-    client_key = os.path.join(tmp_dir, "client-key.pem")
+    client_cert = config.get_client_cert_path()
+    client_key = config.get_client_private_key_path()
 
     if not os.path.exists(client_cert) or not os.path.exists(client_key):
         print("❌ Client certificate or key missing! Run `python run.py init` first.")
