@@ -16,6 +16,9 @@ slots.removable = false
 
 def setup_softhsm(config: Config):
     """Initialize SoftHSM tokens with unique PINs."""
+    if not config.is_fresh():
+        return
+
     tmp_dir = config.get_tmp_dir()
     token_dir = config.get("pkcs11.softhsm.token_dir", os.path.join(tmp_dir, "tokendir"))
     log_level = config.get("pkcs11.softhsm.log.level", "WARNING")
@@ -23,7 +26,6 @@ def setup_softhsm(config: Config):
     library_path = config.get_pkcs11_library_path(True)
     num_tokens = config.get_tokens_num()
     tokens = config.get_tokens()
-
     os.makedirs(token_dir, exist_ok=True)
 
     softhsm2_conf_content = SOFTHSM2_TEMPLATE.format(
@@ -36,13 +38,15 @@ def setup_softhsm(config: Config):
     config.set_env("SOFTHSM2_CONF", softhsm2_conf_path)
 
     for token in tokens:
-        slot_id = token.index - 1 # needs to start from 0
+        slot_id = str(token.index - 1) # needs to start from 0
 
-        subprocess.run([
+        cmd = [
             "softhsm2-util", "--init-token",
             "--module", library_path,
             "--slot", slot_id, "--label", token.name,
             "--pin", token.pin, "--so-pin", so_pin
-        ], check=True)
+        ]
+        print(' '.join(cmd))
+        subprocess.run(cmd, check=True)
 
     print(f"✅ SoftHSM initialized with {num_tokens} tokens.")

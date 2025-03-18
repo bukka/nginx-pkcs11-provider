@@ -117,7 +117,7 @@ class Config:
 
         openssl_dir = self.get_openssl_dir()
         if openssl_dir:
-            module_path = os.path.join(openssl_dir, "ossl-modules", "pkcs11.so")
+            module_path = os.path.join(openssl_dir, "lib64", "ossl-modules", "pkcs11.so")
             if os.path.exists(module_path):
                 return module_path
             else:
@@ -136,6 +136,9 @@ class Config:
 
     def is_nginx_client_cert_enabled(self):
         return self.get("nginx.client_cert.enabled", False)
+
+    def is_fresh(self):
+        return self.get('fresh', True);
 
     def set_env(self, name: str, value: str):
         """Set an environment variable."""

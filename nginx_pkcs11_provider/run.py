@@ -1,5 +1,6 @@
 import argparse
 import os
+import shutil
 
 from nginx_pkcs11_provider.config import Config
 from nginx_pkcs11_provider.setup_softhsm import setup_softhsm
@@ -11,6 +12,8 @@ from nginx_pkcs11_provider.run_nginx import run_nginx
 from nginx_pkcs11_provider.run_client import run_client_test
 
 def init_tmp(config: Config):
+    if config.is_fresh():
+        shutil.rmtree(config.get_tmp_dir())
     os.makedirs(config.get_tmp_dir(), exist_ok=True)
 
 def init(config: Config):
