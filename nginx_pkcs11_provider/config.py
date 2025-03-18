@@ -75,6 +75,10 @@ class Config:
         """Get key type"""
         return self.get("keys.type", default).upper()
 
+    def get_curve_name(self, name: str = "secp256r1"):
+        """Get key curve name (used just for EC type)"""
+        return self.get("keys.curve_name", name)
+
     def get_tokens_num(self, default=1):
         """Returns the number of tokens to be generated."""
         return self.get("pkcs11.tokens.num", default)

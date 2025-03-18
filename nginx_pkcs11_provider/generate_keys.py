@@ -2,9 +2,9 @@ import os
 import time
 import hashlib
 from datetime import datetime, timedelta, timezone
-from pkcs11 import lib, KeyType, Mechanism
+from pkcs11 import lib, KeyType, Mechanism, Attribute
 from pkcs11.util.rsa import encode_rsa_public_key
-from pkcs11.util.ec import encode_ec_public_key, decode_ecdsa_signature
+from pkcs11.util.ec import encode_ec_public_key, decode_ecdsa_signature, encode_named_curve_parameters
 from asn1crypto.x509 import Certificate, TbsCertificate, SignedDigestAlgorithm
 from asn1crypto.algos import DigestAlgorithm, SignedDigestAlgorithm
 from asn1crypto.core import Integer, OctetBitString, Sequence
@@ -106,14 +106,13 @@ def generate_keys(config: Config):
 
         # Generate RSA or EC key pair
         if key_type == "EC":
-            pub, priv = session.generate_keypair(
-                KeyType.EC, 256, store=True, label=token.main_server_key,
-                capabilities={"sign": True, "derive": True}
-            )
+            parameters = session.create_domain_parameters(KeyType.EC, {
+                Attribute.EC_PARAMS: encode_named_curve_parameters(config.get_curve_name())
+            }, local=True)
+            pub, priv = parameters.generate_keypair(store=True, label=token.main_server_key)
         else:
             pub, priv = session.generate_keypair(
-                KeyType.RSA, 2048, store=True, label=token.main_server_key,
-                capabilities={"sign": True, "decrypt": True}
+                KeyType.RSA, 2048, store=True, label=token.main_server_key
             )
 
         print(f"✅ {key_type} key pair created for {token.name}")
