@@ -2,29 +2,35 @@ import os
 import time
 import hashlib
 from datetime import datetime, timedelta, timezone
+
 from pkcs11 import lib, KeyType, Mechanism, Attribute
 from pkcs11.util.rsa import encode_rsa_public_key
 from pkcs11.util.ec import encode_ec_public_key, decode_ecdsa_signature, encode_named_curve_parameters
-from asn1crypto.x509 import Certificate, TbsCertificate, SignedDigestAlgorithm
-from asn1crypto.algos import DigestAlgorithm, SignedDigestAlgorithm
+from asn1crypto.x509 import Certificate, TbsCertificate, Name, Time
+from asn1crypto.algos import SignedDigestAlgorithm
 from asn1crypto.core import Integer, OctetBitString, Sequence
-from asn1crypto.keys import PublicKeyInfo
+from asn1crypto.keys import PublicKeyInfo, RSAPublicKey
 from asn1crypto import pem
 from nginx_pkcs11_provider.config import Config
 
-def generate_tbs_certificate(subject_name, public_key_info):
+def generate_tbs_certificate(subject_name, public_key_info, key_type):
     """Create an X.509 TBS (To-Be-Signed) certificate structure."""
+    subject_pub_key_info = RSAPublicKey.load(public_key_info) if key_type == "RSA" else public_key_info
     tbs = TbsCertificate({
         "version": 2,  # v3 certificate
         "serial_number": int(time.time()),  # Unique serial number
-        "signature": SignedDigestAlgorithm({"algorithm": "sha256_rsa"}),
-        "issuer": {"common_name": "PKCS11 Test CA"},
+        "signature": SignedDigestAlgorithm({"algorithm": "sha256_rsa" if key_type == "RSA" else "sha256_ecdsa"}),
+        "issuer": Name.build({"common_name": "PKCS11 Test CA"}),
         "validity": {
-            "not_before": datetime.now(timezone.utc),
-            "not_after": datetime.now(timezone.utc) + timedelta(days=365),
+            "not_before": Time({
+                'utc_time': datetime.now(timezone.utc),
+            }),
+            "not_after": Time({
+                'utc_time': datetime.now(timezone.utc) + timedelta(days=365),
+            }),
         },
-        "subject": {"common_name": subject_name},
-        "subject_public_key_info": public_key_info,
+        "subject": Name.build({"common_name": subject_name}),
+        "subject_public_key_info": subject_pub_key_info,
     })
     return tbs
 
@@ -42,14 +48,13 @@ def extract_public_key(pkcs11_pub_key):
 
 def sign_with_pkcs11(session, private_key, tbs_data, key_type):
     """Sign the TBS certificate data using the PKCS#11 private key."""
-    if key_type == KeyType.RSA:
+    if key_type == "RSA":
         mechanism = Mechanism.SHA256_RSA_PKCS
         return private_key.sign(tbs_data, mechanism=mechanism)
-    elif key_type == KeyType.EC:
+    elif key_type == "EC":
         mechanism = Mechanism.ECDSA
         tbs_hash = hashlib.sha256(tbs_data).digest()
-        raw_signature = private_key.sign(tbs_hash, mechanism=mechanism)
-        return encode_ecdsa_signature(raw_signature)
+        return private_key.sign(tbs_hash, mechanism=mechanism)
     else:
         raise ValueError("Unsupported key type for signing")
 
@@ -64,7 +69,7 @@ def generate_signed_certificate(session, priv_key, pub_key, subject_name, key_ty
     """Generate a self-signed X.509 certificate using PKCS#11 signing."""
     # Create the TBS certificate
     public_key_info = extract_public_key(pub_key)
-    tbs_cert = generate_tbs_certificate(subject_name, public_key_info)
+    tbs_cert = generate_tbs_certificate(subject_name, public_key_info, key_type)
 
     # Get the DER-encoded TBS certificate (to be signed)
     tbs_der = tbs_cert.dump()
@@ -73,9 +78,9 @@ def generate_signed_certificate(session, priv_key, pub_key, subject_name, key_ty
     signature = sign_with_pkcs11(session, priv_key, tbs_der, key_type)
 
     # Set the correct signature algorithm
-    if key_type == KeyType.RSA:
+    if key_type == "RSA":
         signature_algorithm = "sha256_rsa"
-    elif key_type == KeyType.EC:
+    elif key_type == "EC":
         signature_algorithm = "sha256_ecdsa"
     else:
         raise ValueError("Unsupported key type")
