@@ -1,6 +1,6 @@
 # test config
 
-tpm_dir: tmp/
+tmp_dir: tmp/
 openssl_dir: /usr/local/ssl/
 
 keys:

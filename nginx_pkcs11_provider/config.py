@@ -14,13 +14,16 @@ class Token:
 
 class Config:
     cache: dict
+    custom_envs: dict
+    config_path: str
+    config: dict
 
     def __init__(self, config_path=None):
+        self.custom_envs = {}
+        self.cache = {}
         self.config_path = config_path or "config.yml"
         self.config = self._load_config()
         self._init_tokens()
-        self.custom_envs = {}
-        self.cache = {}
 
     def _load_config(self) -> dict:
         """Load the YAML configuration file."""
@@ -34,22 +37,22 @@ class Config:
         tokens_file = os.path.join(self.get_tmp_dir(), "tokens.yaml")
 
         self.tokens = []
+        num_tokens = self.get_tokens_num()
 
         if os.path.exists(tokens_file):
             with open(tokens_file, "r") as f:
                 token_data = yaml.safe_load(f)
+            if len(token_data) == num_tokens:
                 self.tokens = [Token(index=t["index"], name=t["name"], pin=t["pin"]) for t in token_data]
-        else:
-            num_tokens = self.get_tokens_num()
+        if len(self.tokens) == 0:
             token_prefix = self.get_tokens_prefix()
             self.tokens = [
                 Token(index=i, name=f"{token_prefix}{i}", pin=str(random.randint(1000, 9999)))
                 for i in range(1, num_tokens + 1)
             ]
-
             os.makedirs(os.path.dirname(tokens_file), exist_ok=True)
             with open(tokens_file, "w") as f:
-                yaml.dump([{"name": t.name, "pin": t.pin} for t in self.tokens], f)
+                yaml.dump([{"index": t.index, "name": t.name, "pin": t.pin} for t in self.tokens], f)
 
     def get(self, key, default=None):
         """Helper function to retrieve a config value using dot notation."""
@@ -102,13 +105,13 @@ class Config:
             raise ValueError("No tokens available")
         return self.tokens[0].pin
 
-    def get_openssl_dir(self):
+    def get_openssl_dir(self) -> str:
         """Returns the OpenSSL directory."""
         return self.get("openssl_dir")
 
     def get_pkcs11_module_path(self):
         """Determine the correct path for pkcs11.so."""
-        custom_path = self.get("pkcs11.module")
+        custom_path = self.get("pkcs11.module", False)
         if custom_path:
             return custom_path
 
