@@ -193,3 +193,11 @@ class Config:
         print(f"export {name}='{value}'")
         self.custom_envs[name] = value
         os.environ[name] = value
+
+    def dump_envs(self):
+        """Dump all environment variables to shell file that can be sourced."""
+        tmp_dir = self.get_tmp_dir()
+        env_file = os.path.join(tmp_dir, "env.sh")
+        with open(env_file, "w") as f:
+            for name, value in self.custom_envs.items():
+                f.write(f"export {name}='{value}'\n")

@@ -27,6 +27,7 @@ def init(config: Config):
     generate_keys(config)
     generate_nginx_config(config)
     generate_client_cert(config)
+    config.dump_envs()
     print("✅ Initialization complete! Use `python run.py run <target>` to start.")
 
 def run(target: str, config: Config):
