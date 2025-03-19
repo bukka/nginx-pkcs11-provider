@@ -59,12 +59,6 @@ def sign_with_pkcs11(session, private_key, tbs_data, key_type):
         raise ValueError("Unsupported key type for signing")
 
 
-def encode_ecdsa_signature(signature):
-    """Convert raw PKCS#11 ECDSA signature to ASN.1 DER format."""
-    r, s = decode_ecdsa_signature(signature)
-    return Sequence([Integer(r), Integer(s)]).dump()
-
-
 def generate_signed_certificate(session, priv_key, pub_key, subject_name, key_type):
     """Generate a self-signed X.509 certificate using PKCS#11 signing."""
     # Create the TBS certificate
@@ -127,10 +121,10 @@ def generate_keys(config: Config):
             parameters = session.create_domain_parameters(KeyType.EC, {
                 Attribute.EC_PARAMS: encode_named_curve_parameters(config.get_curve_name())
             }, local=True)
-            pub, priv = parameters.generate_keypair(store=True, label=token.main_server_key)
+            pub, priv = parameters.generate_keypair(id=token.index, store=True, label=token.main_server_key)
         else:
             pub, priv = session.generate_keypair(
-                KeyType.RSA, 2048, store=True, label=token.main_server_key
+                KeyType.RSA, 2048, id=token.index, store=True, label=token.main_server_key
             )
 
         print(f"✅ {key_type} key pair created for {token.name}")
