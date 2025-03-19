@@ -27,7 +27,6 @@ http {{
 SERVER_TEMPLATE = """
 server {{
     listen {port} ssl;
-    ssl_engine pkcs11;
     ssl_certificate "{server_cert}";
     ssl_certificate_key "{server_key}";
     ssl_protocols {ssl_protocol};
