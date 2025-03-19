@@ -5,6 +5,7 @@ openssl_dir: /usr/local/ssl/
 
 keys:
   type: EC
+  curve_name: secp256r1
 
 nginx:
   client_cert:
@@ -26,8 +27,12 @@ pkcs11:
 
   proxy:
     enabled: false
+    port: 7700
+    tls:
+      enabled: false
     lib: /lib/libpkcs11-proxy.so
 
   softhsm:
-    token_dir: /usr
     lib: /usr/local/lib/softhsm/libsofthsm2.so
+    log:
+      level: INFO

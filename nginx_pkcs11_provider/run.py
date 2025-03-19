@@ -3,6 +3,7 @@ import os
 import shutil
 
 from nginx_pkcs11_provider.config import Config
+from nginx_pkcs11_provider.setup_pkcs11_proxy import setup_pkcs11_proxy
 from nginx_pkcs11_provider.setup_softhsm import setup_softhsm
 from nginx_pkcs11_provider.generate_openssl_conf import generate_openssl_conf
 from nginx_pkcs11_provider.generate_keys import generate_keys
@@ -22,6 +23,7 @@ def init(config: Config):
     init_tmp(config)
     generate_openssl_conf(config)
     setup_softhsm(config)
+    setup_pkcs11_proxy(config)
     generate_keys(config)
     generate_nginx_config(config)
     generate_client_cert(config)
