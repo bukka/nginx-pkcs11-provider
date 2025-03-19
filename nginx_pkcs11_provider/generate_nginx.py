@@ -55,17 +55,16 @@ def generate_nginx_config(config: Config):
     pid_file = os.path.join(tmp_dir, "nginx.pid")
     client_body_temp_path = os.path.join(tmp_dir, "client_body_temp")
     proxy_temp_path = os.path.join(tmp_dir, "proxy_temp_path")
-    port_start = config.get("nginx.ports.start", 8443)
-    ssl_protocol = config.get("nginx.ssl.protocol", "TLSv1.2 TLSv1.3")
-    ssl_ciphers = config.get("nginx.ssl.ciphers", "TLS_AES_128_GCM_SHA256:TLS_AES_256_GCM_SHA384:TLS_CHACHA20_POLY1305_SHA256:ECDHE-ECDSA-AES128-GCM-SHA256")
-    ssl_ecdh_curves = config.get("nginx.ssl.ecdh_curver", "prime256v1:secp384r1:brainpoolP256r1:brainpoolP384r1:brainpoolP512r1")
-    ssl_prefer_server_ciphers = config.get("nginx.ssl.prefer_server_ciphers", "on")
+    ssl_protocol = config.get_nginx_ssl_protocol()
+    ssl_ciphers = config.get_nginx_ssl_ciphers()
+    ssl_ecdh_curves = config.get_nginx_ssl_ecdh_curves()
+    ssl_prefer_server_ciphers = config.get_nginx_ssl_prefer_server_ciphers()
     enable_client_cert = config.is_nginx_client_cert_enabled()
 
     servers_config = "\n".join([
         SERVER_TEMPLATE.format(
             index=token.index,
-            port=port_start + token.index - 1,
+            port=token.port,
             server_cert=os.path.join(tmp_dir, f"{token.main_server_cert}.crt"),
             server_key=os.path.join(tmp_dir, f"{token.main_server_key}.pem"),
             ssl_protocol=ssl_protocol,
