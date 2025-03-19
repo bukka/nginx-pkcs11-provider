@@ -39,3 +39,7 @@ def generate_openssl_conf(config: Config):
     print(f"✅ OpenSSL config generated at {openssl_conf_path}")
     config.set_env("OPENSSL_CONF", openssl_conf_path)
     config.set_env("LD_LIBRARY_PATH", os.path.join(config.get_openssl_dir(), "lib64"))
+
+    if config.get('pkcs11.provider.log', True):
+        provider_log = os.path.join(config.get_tmp_dir(), 'pkcs11-provider.log')
+        config.set_env('PKCS11_PROVIDER_DEBUG ', f'file:{provider_log},level:6')
