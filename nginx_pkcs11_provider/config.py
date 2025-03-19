@@ -17,6 +17,7 @@ class Config:
     custom_envs: dict
     config_path: str
     config: dict
+    tmp_dir: str|None = None
 
     def __init__(self, config_path=None):
         self.custom_envs = {}
@@ -93,7 +94,10 @@ class Config:
 
     def get_tmp_dir(self):
         """Returns the temporary directory for storing PEM files."""
-        return self.get("tmp_dir")
+        if self.tmp_dir is None:
+            tmp_dir = self.get("tmp_dir", 'tmp')
+            self.tmp_dir = os.path.join(os.getcwd(), tmp_dir) if not os.path.isabs(tmp_dir) else tmp_dir
+        return self.tmp_dir
 
     def get_client_cert_path(self):
         """Returns the path to the client certificate."""
