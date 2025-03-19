@@ -2,7 +2,7 @@ import os
 import subprocess
 from nginx_pkcs11_provider.config import Config
 
-def run_client_test(config: Config):
+def run_client_test(config: Config, repeat: int = 1):
     """Perform a client-authenticated HTTPS request."""
     cert_args = []
     if config.is_nginx_client_cert_enabled():
@@ -13,10 +13,12 @@ def run_client_test(config: Config):
             return
         cert_args = ["--cert", client_cert, "--key", client_key]
 
-    for token in config.get_tokens():
-        server_url = f"https://localhost:{token.port}/"
-        cmd = ["curl", "-k", *cert_args, server_url]
-        print(f"🔍 Testing client request: " + " ".join(cmd))
-        result = subprocess.run(cmd, capture_output=True, text=True)
-        print("📄 Response:")
-        print(result.stdout)
+    for i in range(repeat):
+        print(f"🔁 Running client test iteration {i + 1}/{repeat}")
+        for token in config.get_tokens():
+            server_url = f"https://localhost:{token.port}/"
+            cmd = ["curl", "-k", *cert_args, server_url]
+            print(f"🔍 Testing client request: " + " ".join(cmd))
+            result = subprocess.run(cmd, capture_output=True, text=True)
+            print("📄 Response:")
+            print(result.stdout)

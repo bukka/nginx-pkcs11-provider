@@ -28,16 +28,16 @@ def init(config: Config):
     generate_nginx_config(config)
     generate_client_cert(config)
     config.dump_envs()
-    print("✅ Initialization complete! Use `python run.py run <target>` to start.")
+    print("✅ Initialization complete! Use `python -m nginx_pkcs11_provider.run run client` to run the client test.")
 
-def run(target: str, config: Config):
+def run(target: str, config: Config, repeat: int = 1):
     """Runs the specified target."""
     if target == "nginx":
         print("🚀 Starting nginx with PKCS#11 integration...")
         run_nginx(config)
     elif target == "client":
         print("🚀 Running client test against PKCS#11 server...")
-        run_client_test(config)
+        run_client_test(config, repeat)
     else:
         print(f"❌ Unknown run target: {target}. Use 'nginx' or 'client'.")
 
@@ -50,6 +50,7 @@ if __name__ == "__main__":
     subparsers.add_parser("init", help="Initialize SoftHSM tokens, keys, nginx config, and client certs")
     parser_run = subparsers.add_parser("run", help="Run a specific component")
     parser_run.add_argument("target", choices=["nginx", "client"], help="Specify what to run")
+    parser_run.add_argument("--repeat", type=int, default=1, help="Number of times to run the client test")
 
     args = parser.parse_args()
 
@@ -58,6 +59,6 @@ if __name__ == "__main__":
     if args.command == "init":
         init(config)
     elif args.command == "run":
-        run(args.target, config)
+        run(args.target, config, args.repeat)
     else:
         parser.print_help()
