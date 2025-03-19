@@ -8,7 +8,7 @@ from pkcs11.util.rsa import encode_rsa_public_key
 from pkcs11.util.ec import encode_ec_public_key, decode_ecdsa_signature, encode_named_curve_parameters
 from asn1crypto.x509 import Certificate, TbsCertificate, Name, Time
 from asn1crypto.algos import SignedDigestAlgorithm
-from asn1crypto.core import Integer, OctetBitString, Sequence
+from asn1crypto.core import Integer, OctetBitString, Sequence, VisibleString, UTF8String
 from asn1crypto.keys import PublicKeyInfo, RSAPublicKey
 from asn1crypto import pem
 from nginx_pkcs11_provider.config import Config
@@ -94,6 +94,19 @@ def generate_signed_certificate(session, priv_key, pub_key, subject_name, key_ty
 
     return signed_cert.dump()
 
+class Pkcs11PrivateKey(Sequence):
+    _fields = [("desc", VisibleString), ("uri", UTF8String)]
+
+def uri2pem(uri: str) -> bytes:
+    """Convert a PKCS#11 URI to a PEM file."""
+    data = Pkcs11PrivateKey(
+        {
+            "desc": VisibleString("PKCS#11 Provider URI v1.0"),
+            "uri": UTF8String(uri),
+        }
+    )
+    return pem.armor("PKCS#11 PROVIDER URI", data.dump())
+
 def generate_keys(config: Config):
     """Generate RSA or EC keys for each SoftHSM token and store a self-signed certificate."""
     tokens = config.get_tokens()
@@ -122,13 +135,19 @@ def generate_keys(config: Config):
 
         print(f"✅ {key_type} key pair created for {token.name}")
 
+        # Generate PEM key representation
+        uri = f"pkcs11:token={token.name};object={token.main_server_key};type=private?pin-value={token.pin}"
+        pem_data = uri2pem(uri)
+        pem_file = os.path.join(tmp_dir, f"{token.main_server_key}.pem")
+        with open(pem_file, "wb") as f:
+            f.write(pem_data)
+        print(f"✅ Private {key_type} key created: {pem_file}")
+
         # Generate a self-signed certificate
         cert_der = generate_signed_certificate(session, priv, pub, token.name, key_type)
-
         # Save the certificate as a PEM file
         cert_pem = pem.armor("CERTIFICATE", cert_der)
         cert_file = os.path.join(tmp_dir, f"{token.main_server_cert}.crt")
         with open(cert_file, "wb") as f:
             f.write(cert_pem)
-
         print(f"✅ Self-signed certificate generated: {cert_file}")
