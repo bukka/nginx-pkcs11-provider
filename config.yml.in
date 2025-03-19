@@ -9,6 +9,13 @@ keys:
 nginx:
   client_cert:
     enabled: true
+  ssl:
+    protocol: TLSv1.2 TLSv1.3
+    # specific EC ciphers for testing
+    # ciphers: ECDHE-ECDSA-AES128-GCM-SHA256:ECDHE-ECDSA-AES256-GCM-SHA384:ECDHE-ECDSA-AES128-CBC-SHA256:ECDHE-ECDSA-AES256-CBC-SHA384
+    # specific RSA ciphers for testing
+    # ciphers: TLS_AES_128_GCM_SHA256:TLS_AES_256_GCM_SHA384:RSA-AES128-GCM-SHA256:RSA-AES256-GCM-SHA384:RSA-AES128-CBC-SHA256:RSA-AES256-CBC-SHA384
+    ecdh_curve: prime256v1:secp384r1:brainpoolP256r1:brainpoolP384r1:brainpoolP512r1
   ports:
     start: 7000
 
