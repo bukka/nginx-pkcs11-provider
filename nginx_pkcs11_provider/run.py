@@ -21,14 +21,14 @@ def init(config: Config):
     config.store()
     print("✅ Initialization complete! Use `python -m nginx_pkcs11_provider.run run client` to run the client test.")
 
-def run(target: str, config: Config, repeat: int = 1):
+def run(target: str, config: Config, repeat: int = 1, parallel: bool = False):
     """Runs the specified target."""
     if target == "nginx":
         print("🚀 Starting nginx with PKCS#11 integration...")
         run_nginx(config)
     elif target == "client":
         print("🚀 Running client test against PKCS#11 server...")
-        run_client_test(config, repeat)
+        run_client_test(config, repeat, parallel)
     else:
         print(f"❌ Unknown run target: {target}. Use 'nginx' or 'client'.")
 
@@ -42,6 +42,7 @@ if __name__ == "__main__":
     parser_run = subparsers.add_parser("run", help="Run a specific component")
     parser_run.add_argument("target", choices=["nginx", "client"], help="Specify what to run")
     parser_run.add_argument("--repeat", type=int, default=1, help="Number of times to run the client test")
+    parser_run.add_argument("--parallel", action="store_true", help="Run client test requests in parallel")
 
     args = parser.parse_args()
 
@@ -50,6 +51,6 @@ if __name__ == "__main__":
         init(config)
     elif args.command == "run":
         config = Config(args.config)
-        run(args.target, config, args.repeat)
+        run(args.target, config, args.repeat, args.parallel)
     else:
         parser.print_help()
