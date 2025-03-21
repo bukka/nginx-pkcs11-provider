@@ -1,7 +1,4 @@
 import argparse
-import os
-import shutil
-
 from nginx_pkcs11_provider.config import Config
 from nginx_pkcs11_provider.setup_pkcs11_proxy import setup_pkcs11_proxy
 from nginx_pkcs11_provider.setup_softhsm import setup_softhsm
@@ -12,15 +9,9 @@ from nginx_pkcs11_provider.generate_client_cert import generate_client_cert
 from nginx_pkcs11_provider.run_nginx import run_nginx
 from nginx_pkcs11_provider.run_client import run_client_test
 
-def init_tmp(config: Config):
-    if config.is_fresh():
-        shutil.rmtree(config.get_tmp_dir())
-    os.makedirs(config.get_tmp_dir(), exist_ok=True)
-
 def init(config: Config):
     """Initializes everything: SoftHSM tokens, OpenSSL config, keys, nginx config, and client certs."""
     print("🔹 Initializing PKCS#11 environment...")
-    init_tmp(config)
     generate_openssl_conf(config)
     setup_softhsm(config)
     setup_pkcs11_proxy(config)
@@ -54,11 +45,11 @@ if __name__ == "__main__":
 
     args = parser.parse_args()
 
-    config = Config(args.config)
-
     if args.command == "init":
+        config = Config(args.config, True)
         init(config)
     elif args.command == "run":
+        config = Config(args.config)
         run(args.target, config, args.repeat)
     else:
         parser.print_help()

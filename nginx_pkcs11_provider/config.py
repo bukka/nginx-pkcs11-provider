@@ -1,6 +1,7 @@
-import yaml
 import os
 import random
+import shutil
+import yaml
 
 class Token:
     """Represents a PKCS#11 token with a name and PIN."""
@@ -19,12 +20,19 @@ class Config:
     config: dict
     tmp_dir: str|None = None
 
-    def __init__(self, config_path=None):
+    def __init__(self, config_path=None, init_tmp: bool = False):
         self.custom_envs = {}
         self.cache = {}
         self.config_path = config_path or "config.yml"
         self.config = self._load_config()
+        if init_tmp:
+            self._init_tmp()
         self._init_tokens()
+
+    def _init_tmp(self):
+        if self.is_fresh():
+            shutil.rmtree(self.get_tmp_dir())
+        os.makedirs(self.get_tmp_dir(), exist_ok=True)
 
     def _load_config(self) -> dict:
         """Load the YAML configuration file."""
