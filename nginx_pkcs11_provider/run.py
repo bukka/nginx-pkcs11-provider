@@ -12,13 +12,13 @@ from nginx_pkcs11_provider.run_client import run_client_test
 def init(config: Config):
     """Initializes everything: SoftHSM tokens, OpenSSL config, keys, nginx config, and client certs."""
     print("🔹 Initializing PKCS#11 environment...")
-    generate_openssl_conf(config)
     setup_softhsm(config)
+    generate_openssl_conf(config)
     setup_pkcs11_proxy(config)
     generate_keys(config)
     generate_nginx_config(config)
     generate_client_cert(config)
-    config.dump_envs()
+    config.store()
     print("✅ Initialization complete! Use `python -m nginx_pkcs11_provider.run run client` to run the client test.")
 
 def run(target: str, config: Config, repeat: int = 1):

@@ -17,6 +17,7 @@ activate = 1
 module = {module_path}
 pkcs11-module-path = {library_path}
 pkcs11-module-token-pin = {default_pin}
+pkcs11-module-default-slot-id = {default_slot}
 activate = 1
 """
 
@@ -31,6 +32,7 @@ def generate_openssl_conf(config: Config):
         module_path=module_path,
         library_path=library_path,
         default_pin=config.get_default_pin(),
+        default_slot=config.get_default_slot(),
     )
 
     with open(openssl_conf_path, "w") as f:

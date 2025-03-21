@@ -5,6 +5,15 @@ import yaml
 
 class Token:
     """Represents a PKCS#11 token with a name and PIN."""
+
+    index: int
+    name: str
+    pin: str
+    port: int
+    slot: str|None = None
+    main_server_key: str
+    main_server_cert: str
+
     def __init__(self, index: int, name: str, pin: str, port_start: int = 7000):
         self.index = index
         self.name = name
@@ -73,9 +82,6 @@ class Config:
                 )
                 for i in range(1, num_tokens + 1)
             ]
-            os.makedirs(os.path.dirname(tokens_file), exist_ok=True)
-            with open(tokens_file, "w") as f:
-                yaml.dump([{"index": t.index, "name": t.name, "pin": t.pin} for t in self.tokens], f)
 
     def get(self, key, default=None):
         """Helper function to retrieve a config value using dot notation."""
@@ -155,11 +161,17 @@ class Config:
         """Returns the path to the client key."""
         return os.path.join(self.get_tmp_dir(), "client-key.pem")
 
-    def get_default_pin(self):
+    def get_default_pin(self) -> str:
         """Returns the first generated token's PIN as the default one."""
         if not self.tokens:
             raise ValueError("No tokens available")
         return self.tokens[0].pin
+
+    def get_default_slot(self) -> str|None:
+        """Returns the first generated token's slot as the default one."""
+        if not self.tokens:
+            raise ValueError("No tokens available")
+        return self.tokens[0].slot
 
     def get_openssl_dir(self) -> str:
         """Returns the OpenSSL directory."""
@@ -202,10 +214,20 @@ class Config:
         self.custom_envs[name] = value
         os.environ[name] = value
 
-    def dump_envs(self):
+    def store_envs(self):
         """Dump all environment variables to shell file that can be sourced."""
         tmp_dir = self.get_tmp_dir()
         env_file = os.path.join(tmp_dir, "env.sh")
         with open(env_file, "w") as f:
             for name, value in self.custom_envs.items():
                 f.write(f"export {name}='{value}'\n")
+
+    def store_tokens(self):
+        """Store all tokens"""
+        tokens_file = os.path.join(self.get_tmp_dir(), "tokens.yaml")
+        with open(tokens_file, "w") as f:
+            yaml.dump([{"index": t.index, "name": t.name, "slot": t.slot, "pin": t.pin} for t in self.tokens], f)
+
+    def store(self):
+        self.store_envs()
+        self.store_tokens()

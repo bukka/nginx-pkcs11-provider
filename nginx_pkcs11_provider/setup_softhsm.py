@@ -1,3 +1,4 @@
+import re
 import subprocess
 import os
 from nginx_pkcs11_provider.config import Config
@@ -37,8 +38,9 @@ def setup_softhsm(config: Config):
         f.write(softhsm2_conf_content)
     config.set_env("SOFTHSM2_CONF", softhsm2_conf_path)
 
+
     for token in tokens:
-        slot_id = str(token.index - 1) # needs to start from 0
+        slot_id = str(token.index - 1)  # needs to start from 0
 
         cmd = [
             "softhsm2-util", "--init-token",
@@ -47,6 +49,15 @@ def setup_softhsm(config: Config):
             "--pin", token.pin, "--so-pin", so_pin
         ]
         print(' '.join(cmd))
-        subprocess.run(cmd, check=True)
+        result = subprocess.run(cmd, capture_output=True, text=True, check=True)
+
+        # Extract the reassigned slot number
+        match = re.search(r"reassigned to slot (\d+)", result.stdout)
+        if match:
+            token.slot = match.group(1)
+            print(f"✅ Token '{token.name}' reassigned to slot {token.slot}")
+        else:
+            print(f"⚠️ Could not determine reassigned slot for token '{token.name}'")
+
 
     print(f"✅ SoftHSM initialized with {num_tokens} tokens.")
