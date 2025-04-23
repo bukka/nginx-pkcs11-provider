@@ -207,6 +207,9 @@ class Config:
     def is_pkcs11_proxy_enabled(self):
         return self.get("pkcs11.proxy.enabled", False)
 
+    def is_pkcs11_proxy_executable(self):
+        return self.get("pkcs11.proxy.executable", "pkcs11-daemon")
+
     def is_nginx_client_cert_enabled(self):
         return self.get("nginx.client_cert.enabled", False)
 

@@ -6,8 +6,9 @@ def run_proxy(config: Config):
     """Runs pkcs11-proxy using the generated configuration."""
     env = config.load_envs(True)
     be_lib = config.get_pkcs11_library_path(True)
-    print(f"🚀 Starting pkcs11-proxy: pkcs11-proxy {be_lib}")
+    executable = config.is_pkcs11_proxy_executable()
+    print(f"🚀 Starting pkcs11-proxy daemon: {executable} {be_lib}")
     try:
-        subprocess.run(["pkcs11-daemon", be_lib], env=env, check=True)
+        subprocess.run([executable, be_lib], env=env, check=True)
     except subprocess.CalledProcessError as e:
         print(f"❌ Nginx failed to start: {e}")
