@@ -44,4 +44,4 @@ def generate_openssl_conf(config: Config):
 
     if config.get('pkcs11.provider.log', True):
         provider_log = os.path.join(config.get_tmp_dir(), 'pkcs11-provider.log')
-        config.set_env('PKCS11_PROVIDER_DEBUG ', f'file:{provider_log},level:6')
+        config.set_env('PKCS11_PROVIDER_DEBUG', f'file:{provider_log},level:6')
