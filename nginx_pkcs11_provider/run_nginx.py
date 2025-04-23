@@ -12,9 +12,10 @@ def run_nginx(config: Config):
         print("❌ Nginx configuration not found! Run `python run.py init` first.")
         return
 
-    print(f"🚀 Starting Nginx with config: {nginx_conf_path}")
-
+    env = config.load_envs(True)
+    executable = config.get_nginx_executable()
+    print(f"🚀 Starting Nginx: {executable} -c {nginx_conf_path}")
     try:
-        subprocess.run(["nginx", "-c", nginx_conf_path, "-g", "daemon off;"], check=True)
+        subprocess.run([executable, "-c", nginx_conf_path], env=env, check=True)
     except subprocess.CalledProcessError as e:
         print(f"❌ Nginx failed to start: {e}")

@@ -1,3 +1,4 @@
+import json
 import os
 import random
 import shutil
@@ -120,6 +121,10 @@ class Config:
         """Returns all generated tokens as objects."""
         return self.tokens
 
+    def get_nginx_executable(self):
+        """Return nginx port start."""
+        return self.get("nginx.executable", "nginx")
+
     def get_nginx_port_start(self):
         """Return nginx port start."""
         return self.get("nginx.ports.start", 7000)
@@ -206,7 +211,24 @@ class Config:
         return self.get("nginx.client_cert.enabled", False)
 
     def is_fresh(self):
-        return self.get('fresh', True);
+        return self.get('fresh', True)
+
+    def get_env_sh_file(self):
+        return os.path.join(self.get_tmp_dir(), "env.sh")
+
+    def get_env_json_file(self):
+        return os.path.join(self.get_tmp_dir(), "env.json")
+
+    def load_envs(self, print_envs: bool = False) -> dict[str, str]:
+        """Load all environment variables from shell file."""
+        env_file = self.get_env_json_file()
+        if os.path.exists(env_file):
+            with open(env_file, "r") as f:
+                self.custom_envs = json.load(f)
+                if print_envs:
+                    for name, value in self.custom_envs.items():
+                        print(f"export {name}={value}")
+        return self.custom_envs
 
     def set_env(self, name: str, value: str):
         """Set an environment variable."""
@@ -215,12 +237,12 @@ class Config:
         os.environ[name] = value
 
     def store_envs(self):
-        """Dump all environment variables to shell file that can be sourced."""
-        tmp_dir = self.get_tmp_dir()
-        env_file = os.path.join(tmp_dir, "env.sh")
-        with open(env_file, "w") as f:
+        """Dump all environment variables to a shell file that can be sourced."""
+        with open(self.get_env_sh_file(), "w") as f:
             for name, value in self.custom_envs.items():
                 f.write(f"export {name}='{value}'\n")
+        with open(self.get_env_json_file(), "w") as f:
+            json.dump(self.custom_envs, f)
 
     def store_tokens(self):
         """Store all tokens"""

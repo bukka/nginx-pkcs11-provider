@@ -1,5 +1,6 @@
 import argparse
 from nginx_pkcs11_provider.config import Config
+from nginx_pkcs11_provider.run_proxy import run_proxy
 from nginx_pkcs11_provider.setup_pkcs11_proxy import setup_pkcs11_proxy
 from nginx_pkcs11_provider.setup_softhsm import setup_softhsm
 from nginx_pkcs11_provider.generate_openssl_conf import generate_openssl_conf
@@ -26,6 +27,9 @@ def run(target: str, config: Config, repeat: int = 1, parallel: bool = False):
     if target == "nginx":
         print("🚀 Starting nginx with PKCS#11 integration...")
         run_nginx(config)
+    elif target == "proxy":
+        print("🚀 Running pkcs11-proxy...")
+        run_proxy(config)
     elif target == "client":
         print("🚀 Running client test against PKCS#11 server...")
         run_client_test(config, repeat, parallel)
@@ -40,7 +44,7 @@ if __name__ == "__main__":
 
     subparsers.add_parser("init", help="Initialize SoftHSM tokens, keys, nginx config, and client certs")
     parser_run = subparsers.add_parser("run", help="Run a specific component")
-    parser_run.add_argument("target", choices=["nginx", "client"], help="Specify what to run")
+    parser_run.add_argument("target", choices=["nginx", "proxy", "client"], help="Specify what to run")
     parser_run.add_argument("--repeat", type=int, default=1, help="Number of times to run the client test")
     parser_run.add_argument("--parallel", action="store_true", help="Run client test requests in parallel")
 

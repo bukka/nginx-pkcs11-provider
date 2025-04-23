@@ -8,6 +8,7 @@ keys:
   curve_name: secp256r1
 
 nginx:
+  # executable: /usr/local/nginx/sbin/nginx
   client_cert:
     enabled: true
   ssl:
