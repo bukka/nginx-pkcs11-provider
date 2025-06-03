@@ -143,6 +143,10 @@ class Config:
         """Return curl executable."""
         return self.get("curl.executable", "curl")
 
+    def is_curl_pkcs11_proxy_enabled(self):
+        """Return whether curl proxy is enabled."""
+        return self.get("curl.pkcs11.proxy", False)
+
     def get_nginx_executable(self):
         """Return nginx executable."""
         return self.get("nginx.executable", "nginx")

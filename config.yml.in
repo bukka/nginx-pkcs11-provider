@@ -10,7 +10,10 @@ keys:
 nginx:
   # executable: /usr/local/nginx/sbin/nginx
   client_cert:
+    # whether to enable client certificate
     enabled: true
+    # whether to use pkcs11 keys for client certificate
+    pkcs11: true
   ssl:
     protocol: TLSv1.2 TLSv1.3
     # specific EC ciphers for testing
@@ -20,6 +23,11 @@ nginx:
     ecdh_curve: prime256v1:secp384r1:brainpoolP256r1:brainpoolP384r1:brainpoolP512r1
   ports:
     start: 7000
+
+curl:
+    # executable: /usr/bin/curl
+    # whether to use proxy
+    proxy: false
 
 pkcs11:
   tokens:

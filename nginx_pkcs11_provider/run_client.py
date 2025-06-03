@@ -18,7 +18,8 @@ def run_client_test(config: Config, repeat: int = 1, parallel: bool = True):
 
 
     config.load_envs(True)
-    config.use_openssl_be_config()
+    if not config.is_curl_pkcs11_proxy_enabled():
+        config.use_openssl_be_config()
     envs = config.get_envs()
     executable = config.get_curl_executable()
 
