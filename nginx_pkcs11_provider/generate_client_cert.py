@@ -7,10 +7,11 @@ from cryptography.hazmat.primitives import serialization
 from datetime import datetime, timedelta, timezone
 from nginx_pkcs11_provider.config import Config
 
+
 def generate_client_cert(config: Config):
     """Generate a normal file-based client certificate (self-signed)."""
     # Skip if the client cert is not used.
-    if not config.is_nginx_client_cert_enabled():
+    if not config.is_nginx_client_cert_enabled() or config.is_nginx_client_cert_with_pkcs11_key():
         return
 
     tmp_dir = config.get_tmp_dir()

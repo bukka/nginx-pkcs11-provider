@@ -13,6 +13,7 @@ from asn1crypto.keys import PublicKeyInfo, RSAPublicKey
 from asn1crypto import pem
 from nginx_pkcs11_provider.config import Config
 
+
 def generate_tbs_certificate(subject_name, public_key_info, key_type):
     """Create an X.509 TBS (To-Be-Signed) certificate structure."""
     subject_pub_key_info = RSAPublicKey.load(public_key_info) if key_type == "RSA" else public_key_info
@@ -45,6 +46,7 @@ def extract_public_key(pkcs11_pub_key):
         raise ValueError("Unsupported key type for certificate generation")
 
     return PublicKeyInfo.load(pub_der)
+
 
 def sign_with_pkcs11(session, private_key, tbs_data, key_type):
     """Sign the TBS certificate data using the PKCS#11 private key."""
@@ -88,8 +90,10 @@ def generate_signed_certificate(session, priv_key, pub_key, subject_name, key_ty
 
     return signed_cert.dump()
 
+
 class Pkcs11PrivateKey(Sequence):
     _fields = [("desc", VisibleString), ("uri", UTF8String)]
+
 
 def uri2pem(uri: str) -> bytes:
     """Convert a PKCS#11 URI to a PEM file."""
@@ -101,6 +105,45 @@ def uri2pem(uri: str) -> bytes:
     )
     return pem.armor("PKCS#11 PROVIDER URI", data.dump())
 
+
+def generate_key(config: Config, pkcs11, tmp_dir: str, key_type: str, token_type: str, token_name: str,
+                 token_index: int, token_pin: str, token_server_key: str, token_server_cert: str):
+    print(f"🔹 Generating {token_type} {key_type} key pair for {token_name}...")
+
+    pkcs11_token = pkcs11.get_token(token_label=token_name)
+    session = pkcs11_token.open(rw=True, user_pin=token_pin)
+
+    # Generate RSA or EC key pair
+    if key_type == "EC":
+        parameters = session.create_domain_parameters(KeyType.EC, {
+            Attribute.EC_PARAMS: encode_named_curve_parameters(config.get_curve_name())
+        }, local=True)
+        pub, priv = parameters.generate_keypair(id=token_index, store=True, label=token_server_key)
+    else:
+        pub, priv = session.generate_keypair(
+            KeyType.RSA, 2048, id=token_index, store=True, label=token_server_key
+        )
+
+    print(f"✅ {key_type} key pair created for {token_name}")
+
+    # Generate PEM key representation
+    uri = f"pkcs11:token={token_name};object={token_server_key};type=private?pin-value={token_pin}"
+    pem_data = uri2pem(uri)
+    pem_file = config.get_key_path(token_server_key)
+    with open(pem_file, "wb") as f:
+        f.write(pem_data)
+    print(f"✅ Private {key_type} key created: {pem_file}")
+
+    # Generate a self-signed certificate
+    cert_der = generate_signed_certificate(session, priv, pub, token_name, key_type)
+    # Save the certificate as a PEM file
+    cert_pem = pem.armor("CERTIFICATE", cert_der)
+    cert_file = config.get_cert_path(token_server_cert)
+    with open(cert_file, "wb") as f:
+        f.write(cert_pem)
+    print(f"✅ Self-signed certificate generated: {cert_file}")
+
+
 def generate_keys(config: Config):
     """Generate RSA or EC keys for each SoftHSM token and store a self-signed certificate."""
     tokens = config.get_tokens()
@@ -111,37 +154,8 @@ def generate_keys(config: Config):
     pkcs11 = lib(lib_path)
 
     for token in tokens:
-        print(f"🔹 Generating {key_type} key pair for {token.name}...")
-
-        pkcs11_token = pkcs11.get_token(token_label=token.name)
-        session = pkcs11_token.open(rw=True, user_pin=token.pin)
-
-        # Generate RSA or EC key pair
-        if key_type == "EC":
-            parameters = session.create_domain_parameters(KeyType.EC, {
-                Attribute.EC_PARAMS: encode_named_curve_parameters(config.get_curve_name())
-            }, local=True)
-            pub, priv = parameters.generate_keypair(id=token.index, store=True, label=token.main_server_key)
-        else:
-            pub, priv = session.generate_keypair(
-                KeyType.RSA, 2048, id=token.index, store=True, label=token.main_server_key
-            )
-
-        print(f"✅ {key_type} key pair created for {token.name}")
-
-        # Generate PEM key representation
-        uri = f"pkcs11:token={token.name};object={token.main_server_key};type=private?pin-value={token.pin}"
-        pem_data = uri2pem(uri)
-        pem_file = os.path.join(tmp_dir, f"{token.main_server_key}.pem")
-        with open(pem_file, "wb") as f:
-            f.write(pem_data)
-        print(f"✅ Private {key_type} key created: {pem_file}")
-
-        # Generate a self-signed certificate
-        cert_der = generate_signed_certificate(session, priv, pub, token.name, key_type)
-        # Save the certificate as a PEM file
-        cert_pem = pem.armor("CERTIFICATE", cert_der)
-        cert_file = os.path.join(tmp_dir, f"{token.main_server_cert}.crt")
-        with open(cert_file, "wb") as f:
-            f.write(cert_pem)
-        print(f"✅ Self-signed certificate generated: {cert_file}")
+        generate_key(config, pkcs11, tmp_dir, key_type, "server", token.get_server_name(),
+                     token.index, token.pin, token.main_server_key, token.main_server_cert)
+        if config.is_nginx_client_cert_enabled() and config.is_nginx_client_cert_with_pkcs11_key():
+            generate_key(config, pkcs11, tmp_dir, key_type, "client", token.get_client_name(),
+                         token.index, token.pin, token.main_client_key, token.main_client_cert)

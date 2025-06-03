@@ -60,19 +60,20 @@ def generate_nginx_config(config: Config):
     ssl_ecdh_curves = config.get_nginx_ssl_ecdh_curves()
     ssl_prefer_server_ciphers = config.get_nginx_ssl_prefer_server_ciphers()
     enable_client_cert = config.is_nginx_client_cert_enabled()
+    pkcs11_client_cert = config.is_nginx_client_cert_with_pkcs11_key()
 
     servers_config = "\n".join([
         SERVER_TEMPLATE.format(
             index=token.index,
             port=token.port,
-            server_cert=os.path.join(tmp_dir, f"{token.main_server_cert}.crt"),
-            server_key=os.path.join(tmp_dir, f"{token.main_server_key}.pem"),
+            server_cert=config.get_cert_path(token.main_server_cert),
+            server_key=config.get_key_path(token.main_server_key),
             ssl_protocol=ssl_protocol,
             ssl_ciphers=ssl_ciphers,
             ssl_ecdh_curves=ssl_ecdh_curves,
             ssl_prefer_server_ciphers=ssl_prefer_server_ciphers,
             client_cert_config=CLIENT_CERT_CONFIG.format(
-                client_cert=config.get_client_cert_path()
+                client_cert=config.get_cert_path(token.main_client_cert) if pkcs11_client_cert else config.get_client_cert_path()
             ) if enable_client_cert else ""
         )
         for token in tokens

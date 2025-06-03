@@ -4,10 +4,11 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 
 from nginx_pkcs11_provider.config import Config
 
+
 def run_client_test(config: Config, repeat: int = 1, parallel: bool = True):
     """Perform a client-authenticated HTTPS request."""
     cert_args = []
-    if config.is_nginx_client_cert_enabled():
+    if config.is_nginx_client_cert_enabled() and not config.is_nginx_client_cert_with_pkcs11_key():
         client_cert = config.get_client_cert_path()
         client_key = config.get_client_private_key_path()
         if not os.path.exists(client_cert) or not os.path.exists(client_key):
@@ -15,11 +16,21 @@ def run_client_test(config: Config, repeat: int = 1, parallel: bool = True):
             return
         cert_args = ["--cert", client_cert, "--key", client_key]
 
+    env = config.load_envs(True)
+    executable = config.get_curl_executable()
+
     def do_request(token):
+        if config.is_nginx_client_cert_enabled() and config.is_nginx_client_cert_with_pkcs11_key():
+            curl_cert_args = [
+                "--cert", config.get_cert_path(token.main_client_cert),
+                "--key", config.get_key_path(token.main_client_key)
+            ]
+        else:
+            curl_cert_args = cert_args
         server_url = f"https://localhost:{token.port}/"
-        cmd = ["curl", "-k", *cert_args, server_url]
+        cmd = [executable, "-k", *curl_cert_args, server_url]
         print(f"🔍 Testing client request: {' '.join(cmd)}")
-        result = subprocess.run(cmd, capture_output=True, text=True)
+        result = subprocess.run(cmd, capture_output=True, text=True, env=env)
         return token.name, result.stdout.strip()
 
     for i in range(repeat):

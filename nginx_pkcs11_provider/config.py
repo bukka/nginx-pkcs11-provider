@@ -4,6 +4,7 @@ import random
 import shutil
 import yaml
 
+
 class Token:
     """Represents a PKCS#11 token with a name and PIN."""
 
@@ -11,24 +12,39 @@ class Token:
     name: str
     pin: str
     port: int
-    slot: str|None = None
+    server_slot: str | None = None
+    client_slot: str | None = None
     main_server_key: str
     main_server_cert: str
+    main_client_key: str
+    main_client_cert: str
 
-    def __init__(self, index: int, name: str, pin: str, port_start: int = 7000):
+    def __init__(self, index: int, name: str, pin: str, server_slot: str | None = None, client_slot: str | None = None,
+                 port_start: int = 7000):
         self.index = index
         self.name = name
         self.pin = pin
+        self.server_slot = server_slot
+        self.client_slot = client_slot
         self.port = port_start + index - 1
         self.main_server_key = f"server-key-{index}"
         self.main_server_cert = f"server-cert-{index}"
+        self.main_client_key = f"client-key-{index}"
+        self.main_client_cert = f"client-cert-{index}"
+
+    def get_client_name(self) -> str:
+        return self.name + 'c'
+
+    def get_server_name(self) -> str:
+        return self.name + 's'
+
 
 class Config:
     cache: dict
     custom_envs: dict
     config_path: str
     config: dict
-    tmp_dir: str|None = None
+    tmp_dir: str | None = None
 
     def __init__(self, config_path=None, init_tmp: bool = False):
         self.custom_envs = {}
@@ -68,6 +84,8 @@ class Config:
                         index=t["index"],
                         name=t["name"],
                         pin=t["pin"],
+                        server_slot=t["server_slot"],
+                        client_slot=t["client_slot"],
                         port_start=port_start,
                     )
                     for t in token_data
@@ -121,8 +139,12 @@ class Config:
         """Returns all generated tokens as objects."""
         return self.tokens
 
+    def get_curl_executable(self):
+        """Return curl executable."""
+        return self.get("curl.executable", "curl")
+
     def get_nginx_executable(self):
-        """Return nginx port start."""
+        """Return nginx executable."""
         return self.get("nginx.executable", "nginx")
 
     def get_nginx_port_start(self):
@@ -166,17 +188,23 @@ class Config:
         """Returns the path to the client key."""
         return os.path.join(self.get_tmp_dir(), "client-key.pem")
 
+    def get_cert_path(self, cert_name: str):
+        return os.path.join(self.get_tmp_dir(), f"{cert_name}.crt")
+
+    def get_key_path(self, key_name: str):
+        return os.path.join(self.get_tmp_dir(), f"{key_name}.pem")
+
     def get_default_pin(self) -> str:
         """Returns the first generated token's PIN as the default one."""
         if not self.tokens:
             raise ValueError("No tokens available")
         return self.tokens[0].pin
 
-    def get_default_slot(self) -> str|None:
+    def get_default_slot(self) -> str | None:
         """Returns the first generated token's slot as the default one."""
         if not self.tokens:
             raise ValueError("No tokens available")
-        return self.tokens[0].slot
+        return self.tokens[0].server_slot
 
     def get_openssl_dir(self) -> str:
         """Returns the OpenSSL directory."""
@@ -199,7 +227,7 @@ class Config:
 
     def get_pkcs11_library_path(self, backend: bool = False):
         """Determine the correct path for the PKCS#11 library."""
-        if not backend and  self.is_pkcs11_proxy_enabled():
+        if not backend and self.is_pkcs11_proxy_enabled():
             return self.get("pkcs11.proxy.lib")
         else:
             return self.get("pkcs11.softhsm.lib")
@@ -212,6 +240,9 @@ class Config:
 
     def is_nginx_client_cert_enabled(self):
         return self.get("nginx.client_cert.enabled", False)
+
+    def is_nginx_client_cert_with_pkcs11_key(self):
+        return self.get("nginx.client_cert.pkcs11", True)
 
     def is_fresh(self):
         return self.get('fresh', True)
@@ -251,7 +282,13 @@ class Config:
         """Store all tokens"""
         tokens_file = os.path.join(self.get_tmp_dir(), "tokens.yaml")
         with open(tokens_file, "w") as f:
-            yaml.dump([{"index": t.index, "name": t.name, "slot": t.slot, "pin": t.pin} for t in self.tokens], f)
+            yaml.dump([{
+                "index": t.index,
+                "name": t.name,
+                "server_slot": t.server_slot,
+                "client_slot": t.client_slot,
+                "pin": t.pin
+            } for t in self.tokens], f)
 
     def store(self):
         self.store_envs()
