@@ -18,10 +18,10 @@ def generate_tbs_certificate(subject_name, public_key_info, key_type):
     """Create an X.509 TBS (To-Be-Signed) certificate structure."""
     subject_pub_key_info = RSAPublicKey.load(public_key_info) if key_type == "RSA" else public_key_info
     tbs = TbsCertificate({
-        "version": 2,  # v3 certificate
-        "serial_number": int(time.time()),  # Unique serial number
+        "version": 2,
+        "serial_number": int(time.time()),
         "signature": SignedDigestAlgorithm({"algorithm": "sha256_rsa" if key_type == "RSA" else "sha256_ecdsa"}),
-        "issuer": Name.build({"common_name": "PKCS11 Test CA"}),
+        "issuer": Name.build({"common_name": subject_name}),
         "validity": {
             "not_before": Time({
                 'utc_time': datetime.now(timezone.utc),
