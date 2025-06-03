@@ -253,6 +253,19 @@ class Config:
     def get_env_json_file(self):
         return os.path.join(self.get_tmp_dir(), "env.json")
 
+    def save_openssl_config_paths(self, fe_path: str, be_path: str):
+        self.set_env("OPENSSL_CONF_FE", fe_path)
+        self.set_env("OPENSSL_CONF_BE", be_path)
+
+    def use_openssl_be_config(self):
+        self.set_env("OPENSSL_CONF", self.custom_envs['OPENSSL_CONF_BE'])
+
+    def use_openssl_fe_config(self):
+        self.set_env("OPENSSL_CONF", self.custom_envs['OPENSSL_CONF_FE'])
+
+    def get_envs(self):
+        return self.custom_envs
+
     def load_envs(self, print_envs: bool = False) -> dict[str, str]:
         """Load all environment variables from shell file."""
         env_file = self.get_env_json_file()

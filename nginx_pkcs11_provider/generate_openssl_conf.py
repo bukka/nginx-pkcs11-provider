@@ -21,12 +21,12 @@ pkcs11-module-default-slot-id = {default_slot}
 activate = 1
 """
 
-def generate_openssl_conf(config: Config):
-    """Generates the OpenSSL configuration file."""
-    openssl_conf_path = os.path.join(config.get_tmp_dir(), "openssl.cnf")
+def make_openssl_conf(config: Config, backend: bool = False) -> str:
+    openssl_conf_type = 'be' if backend else 'fe'
+    openssl_conf_path = os.path.join(config.get_tmp_dir(), f"openssl-{openssl_conf_type}.cnf")
 
     module_path = config.get_pkcs11_module_path()
-    library_path = config.get_pkcs11_library_path()
+    library_path = config.get_pkcs11_library_path(backend)
 
     openssl_conf_content = OPENSSL_TEMPLATE.format(
         module_path=module_path,
@@ -38,8 +38,15 @@ def generate_openssl_conf(config: Config):
     with open(openssl_conf_path, "w") as f:
         f.write(openssl_conf_content)
 
-    print(f"✅ OpenSSL config generated at {openssl_conf_path}")
-    config.set_env("OPENSSL_CONF", openssl_conf_path)
+    return openssl_conf_path
+
+def generate_openssl_conf(config: Config):
+    """Generates the OpenSSL configuration file."""
+    [fe_path, be_path] = [make_openssl_conf(config, False), make_openssl_conf(config, True)]
+    config.save_openssl_config_paths(fe_path, be_path)
+
+    print(f"✅ OpenSSL frontend config generated at {fe_path} and backend config generated at {be_path}")
+    config.use_openssl_fe_config()
     config.set_env("LD_LIBRARY_PATH", os.path.join(config.get_openssl_dir(), "lib64"))
 
     if config.get('pkcs11.provider.log', True):

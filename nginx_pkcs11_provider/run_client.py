@@ -16,7 +16,10 @@ def run_client_test(config: Config, repeat: int = 1, parallel: bool = True):
             return
         cert_args = ["--cert", client_cert, "--key", client_key]
 
-    env = config.load_envs(True)
+
+    config.load_envs(True)
+    config.use_openssl_be_config()
+    envs = config.get_envs()
     executable = config.get_curl_executable()
 
     def do_request(token):
@@ -30,7 +33,7 @@ def run_client_test(config: Config, repeat: int = 1, parallel: bool = True):
         server_url = f"https://localhost:{token.port}/"
         cmd = [executable, "-k", *curl_cert_args, server_url]
         print(f"🔍 Testing client request: {' '.join(cmd)}")
-        result = subprocess.run(cmd, capture_output=True, text=True, env=env)
+        result = subprocess.run(cmd, capture_output=True, text=True, env=envs)
         return token.name, result.stdout.strip()
 
     for i in range(repeat):
