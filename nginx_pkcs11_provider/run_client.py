@@ -2,7 +2,7 @@ import os
 import subprocess
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
-from nginx_pkcs11_provider.config import Config
+from nginx_pkcs11_provider.config import Config, Token
 
 
 def run_client_test(config: Config, repeat: int = 1, parallel: bool = True):
@@ -23,11 +23,17 @@ def run_client_test(config: Config, repeat: int = 1, parallel: bool = True):
     envs = config.get_envs()
     executable = config.get_curl_executable()
 
-    def do_request(token):
+    def do_request(token: Token):
         if config.is_nginx_client_cert_enabled() and config.is_nginx_client_cert_with_pkcs11_key():
+            if config.is_nginx_client_cert_same_as_server_cert():
+                cert_name = token.main_server_cert
+                key_name = token.main_server_key
+            else:
+                cert_name = token.main_client_cert
+                key_name = token.main_client_key
             curl_cert_args = [
-                "--cert", config.get_cert_path(token.main_client_cert),
-                "--key", config.get_key_path(token.main_client_key)
+                "--cert", config.get_cert_path(cert_name),
+                "--key", config.get_key_path(key_name)
             ]
         else:
             curl_cert_args = cert_args

@@ -248,6 +248,17 @@ class Config:
     def is_nginx_client_cert_with_pkcs11_key(self):
         return self.get("nginx.client_cert.pkcs11", True)
 
+    def is_nginx_client_cert_same_as_server_cert(self):
+        return self.get("nginx.client_cert.server", False)
+
+    def has_nginx_client_cert_token(self):
+        """Whether nginx client certificate requires a special token to be created"""
+        return (
+                self.is_nginx_client_cert_enabled() and
+                self.is_nginx_client_cert_with_pkcs11_key() and
+                not self.is_nginx_client_cert_same_as_server_cert()
+        )
+
     def is_fresh(self):
         return self.get('fresh', True)
 

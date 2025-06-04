@@ -156,6 +156,6 @@ def generate_keys(config: Config):
     for token in tokens:
         generate_key(config, pkcs11, tmp_dir, key_type, "server", token.get_server_name(),
                      token.index, token.pin, token.main_server_key, token.main_server_cert)
-        if config.is_nginx_client_cert_enabled() and config.is_nginx_client_cert_with_pkcs11_key():
+        if config.has_nginx_client_cert_token():
             generate_key(config, pkcs11, tmp_dir, key_type, "client", token.get_client_name(),
                          token.index, token.pin, token.main_client_key, token.main_client_cert)

@@ -1,5 +1,5 @@
 import os
-from nginx_pkcs11_provider.config import Config
+from nginx_pkcs11_provider.config import Config, Token
 
 NGINX_TEMPLATE = """# Nginx configuration file
 pid {pid_file};
@@ -59,8 +59,19 @@ def generate_nginx_config(config: Config):
     ssl_ciphers = config.get_nginx_ssl_ciphers()
     ssl_ecdh_curves = config.get_nginx_ssl_ecdh_curves()
     ssl_prefer_server_ciphers = config.get_nginx_ssl_prefer_server_ciphers()
-    enable_client_cert = config.is_nginx_client_cert_enabled()
-    pkcs11_client_cert = config.is_nginx_client_cert_with_pkcs11_key()
+
+    def get_client_cert_config(token: Token):
+        if not config.is_nginx_client_cert_enabled():
+            return ""
+        if config.is_nginx_client_cert_with_pkcs11_key():
+            if config.is_nginx_client_cert_same_as_server_cert():
+                client_cert_name = token.main_server_cert
+            else:
+                client_cert_name = token.main_client_cert
+            client_cert = config.get_cert_path(client_cert_name)
+        else:
+            client_cert = config.get_client_cert_path()
+        return CLIENT_CERT_CONFIG.format(client_cert=client_cert)
 
     servers_config = "\n".join([
         SERVER_TEMPLATE.format(
@@ -72,9 +83,7 @@ def generate_nginx_config(config: Config):
             ssl_ciphers=ssl_ciphers,
             ssl_ecdh_curves=ssl_ecdh_curves,
             ssl_prefer_server_ciphers=ssl_prefer_server_ciphers,
-            client_cert_config=CLIENT_CERT_CONFIG.format(
-                client_cert=config.get_cert_path(token.main_client_cert) if pkcs11_client_cert else config.get_client_cert_path()
-            ) if enable_client_cert else ""
+            client_cert_config=get_client_cert_config(token)
         )
         for token in tokens
     ])

@@ -61,7 +61,7 @@ def setup_softhsm(config: Config):
     for token in tokens:
         token.server_slot = create_token(token, idx, token.get_server_name())
         idx += 1
-        if config.is_nginx_client_cert_enabled() and config.is_nginx_client_cert_with_pkcs11_key():
+        if config.has_nginx_client_cert_token():
             token.client_slot = create_token(token, idx, token.get_client_name())
             idx += 1
 

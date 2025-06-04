@@ -14,6 +14,8 @@ nginx:
     enabled: true
     # whether to use pkcs11 keys for client certificate
     pkcs11: true
+    # whether to use the same pkcs11 keys as server ones - ignored if pkcs11 is false
+    server: false
   ssl:
     protocol: TLSv1.2 TLSv1.3
     # specific EC ciphers for testing
