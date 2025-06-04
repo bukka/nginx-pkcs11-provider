@@ -21,6 +21,7 @@ pkcs11-module-default-slot-id = {default_slot}
 activate = 1
 """
 
+
 def make_openssl_conf(config: Config, backend: bool = False) -> str:
     openssl_conf_type = 'be' if backend else 'fe'
     openssl_conf_path = os.path.join(config.get_tmp_dir(), f"openssl-{openssl_conf_type}.cnf")
@@ -40,6 +41,7 @@ def make_openssl_conf(config: Config, backend: bool = False) -> str:
 
     return openssl_conf_path
 
+
 def generate_openssl_conf(config: Config):
     """Generates the OpenSSL configuration file."""
     [fe_path, be_path] = [make_openssl_conf(config, False), make_openssl_conf(config, True)]
@@ -48,7 +50,4 @@ def generate_openssl_conf(config: Config):
     print(f"✅ OpenSSL frontend config generated at {fe_path} and backend config generated at {be_path}")
     config.use_openssl_fe_config()
     config.set_env("LD_LIBRARY_PATH", os.path.join(config.get_openssl_dir(), "lib64"))
-
-    if config.get('pkcs11.provider.log', True):
-        provider_log = os.path.join(config.get_tmp_dir(), 'pkcs11-provider.log')
-        config.set_env('PKCS11_PROVIDER_DEBUG', f'file:{provider_log},level:6')
+    config.set_openssl_provider_log()

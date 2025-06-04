@@ -267,6 +267,11 @@ class Config:
     def use_openssl_fe_config(self):
         self.set_env("OPENSSL_CONF", self.custom_envs['OPENSSL_CONF_FE'])
 
+    def set_openssl_provider_log(self, suffix: str = "base"):
+        if self.get('pkcs11.provider.log', True):
+            provider_log = os.path.join(self.get_tmp_dir(), f'pkcs11-provider-{suffix}.log')
+            self.set_env('PKCS11_PROVIDER_DEBUG', f'file:{provider_log},level:6')
+
     def get_envs(self):
         return self.custom_envs
 

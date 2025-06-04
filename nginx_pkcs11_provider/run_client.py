@@ -16,10 +16,10 @@ def run_client_test(config: Config, repeat: int = 1, parallel: bool = True):
             return
         cert_args = ["--cert", client_cert, "--key", client_key]
 
-
     config.load_envs(True)
     if not config.is_curl_pkcs11_proxy_enabled():
         config.use_openssl_be_config()
+    config.set_openssl_provider_log('curl')
     envs = config.get_envs()
     executable = config.get_curl_executable()
 
