@@ -222,11 +222,14 @@ class Config:
 
         openssl_dir = self.get_openssl_dir()
         if openssl_dir:
-            module_path = os.path.join(openssl_dir, "lib64", "ossl-modules", "pkcs11.so")
-            if os.path.exists(module_path):
-                return module_path
+            module_path_linux = os.path.join(openssl_dir, "lib64", "ossl-modules", "pkcs11.so")
+            if os.path.exists(module_path_linux):
+                return module_path_linux
+            module_path_osx = os.path.join(openssl_dir, "lib", "ossl-modules", "pkcs11.dylib")
+            if os.path.exists(module_path_osx):
+                return module_path_osx
             else:
-                raise ValueError(f"openssl module path {module_path} does not exist")
+                raise ValueError(f"openssl module path {module_path_linux} or {module_path_osx} does not exist")
         raise ValueError("module path does not exist")
 
     def get_pkcs11_library_path(self, backend: bool = False):

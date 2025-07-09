@@ -32,6 +32,7 @@ curl:
     proxy: false
 
 pkcs11:
+
   tokens:
     prefix: ngxp11
     num: 3
