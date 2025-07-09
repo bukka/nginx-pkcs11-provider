@@ -4,6 +4,7 @@ from nginx_pkcs11_provider.config import Config, Token
 NGINX_TEMPLATE = """# Nginx configuration file
 pid {pid_file};
 daemon off;
+error_log /dev/stderr debug;
 
 env SOFTHSM2_CONF;
 env OPENSSL_CONF;
@@ -19,6 +20,9 @@ http {{
 
     client_body_temp_path {client_body_temp_path};
     proxy_temp_path {proxy_temp_path};
+    fastcgi_temp_path {fastcgi_temp_path};
+    uwsgi_temp_path {uwsgi_temp_path};
+    scgi_temp_path {scgi_temp_path};
 
     {servers}
 }}
@@ -55,6 +59,9 @@ def generate_nginx_config(config: Config):
     pid_file = os.path.join(tmp_dir, "nginx.pid")
     client_body_temp_path = os.path.join(tmp_dir, "client_body_temp")
     proxy_temp_path = os.path.join(tmp_dir, "proxy_temp_path")
+    fastcgi_temp_path = os.path.join(tmp_dir, "fastcgi_temp_path")
+    uwsgi_temp_path = os.path.join(tmp_dir, "uwsgi_temp")
+    scgi_temp_path = os.path.join(tmp_dir, "scgi_temp")
     ssl_protocol = config.get_nginx_ssl_protocol()
     ssl_ciphers = config.get_nginx_ssl_ciphers()
     ssl_ecdh_curves = config.get_nginx_ssl_ecdh_curves()
@@ -93,6 +100,9 @@ def generate_nginx_config(config: Config):
         servers=servers_config,
         client_body_temp_path=client_body_temp_path,
         proxy_temp_path=proxy_temp_path,
+        fastcgi_temp_path=fastcgi_temp_path,
+        uwsgi_temp_path=uwsgi_temp_path,
+        scgi_temp_path=scgi_temp_path,
     )
 
     nginx_conf_path = os.path.join(tmp_dir, "nginx.conf")
