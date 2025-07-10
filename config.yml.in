@@ -9,6 +9,10 @@ keys:
 
 nginx:
   # executable: /usr/local/nginx/sbin/nginx
+  # config instance details
+  instances:
+    # number of instances - needs to be lower than number of tokens and tokens get split between them
+    count: 1
   client_cert:
     # whether to enable client certificate
     enabled: true

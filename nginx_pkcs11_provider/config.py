@@ -151,6 +151,10 @@ class Config:
         """Return nginx executable."""
         return self.get("nginx.executable", "nginx")
 
+    def get_nginx_instances_count(self):
+        """Return nginx instances count."""
+        return self.get("nginx.instances.count", 1)
+
     def get_nginx_port_start(self):
         """Return nginx port start."""
         return self.get("nginx.ports.start", 7000)
